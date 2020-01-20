@@ -24,54 +24,74 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.gradle.api.Project;
-
+import io.github.fukkitmc.gloom.GloomDefinitions;
+import io.github.fukkitmc.gloom.GloomInjector;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import org.gradle.api.Project;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
 public class MapJarsTiny {
-	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
-		String fromM = "official";
+    public static void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+        GloomDefinitions definitions = extension.definitions;
+        boolean dontTransform = definitions.getDefinitions().isEmpty();
 
-		Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
+        Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
-		Path input = jarProvider.getMergedJar().toPath();
-		Path outputMapped = mapProvider.getMappedJar().toPath();
-		Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
+        Path input = jarProvider.getMergedJar().toPath();
+        Path outputMapped = mapProvider.getMappedJar().toPath();
+        Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
 
-		for (String toM : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+        {
+            project.getLogger().lifecycle(":remapping Minecraft (TinyRemapper, official -> intermediary)");
 
-			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+            TinyRemapper remapper = TinyRemapper.newRemapper()
+                    .withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), "official", "intermediary", true))
+                    .renameInvalidLocals(true)
+                    .rebuildSourceFilenames(true)
+                    .build();
 
-			TinyRemapper remapper = TinyRemapper.newRemapper()
-							.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, true))
-							.renameInvalidLocals(true)
-							.rebuildSourceFilenames(true)
-							.build();
+            try (OutputConsumerPath output = new OutputConsumerPath.Builder(outputIntermediary).build()) {
+                output.addNonClassFiles(input);
+                remapper.readClassPath(classpath);
+                remapper.readInputs(input);
 
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				outputConsumer.addNonClassFiles(input);
-				remapper.readClassPath(classpath);
-				remapper.readInputs(input);
-				remapper.apply(outputConsumer);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
-			} finally {
-				remapper.finish();
-			}
-		}
-	}
+                remapper.apply(output);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
+            } finally {
+                remapper.finish();
+            }
+        }
+
+        project.getLogger().lifecycle(":remapping Minecraft (TinyRemapper, official -> named)");
+
+        TinyRemapper remapper = TinyRemapper.newRemapper()
+                .withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), "official", "named", true))
+                .extraPostVisitor(dontTransform ? null : visitor -> new GloomInjector(visitor, definitions))
+                .renameInvalidLocals(true)
+                .rebuildSourceFilenames(true)
+                .build();
+
+        try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputMapped).build()) {
+            outputConsumer.addNonClassFiles(input);
+            remapper.readClassPath(classpath);
+            remapper.readInputs(input);
+            remapper.apply(outputConsumer);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
+        } finally {
+            remapper.finish();
+        }
+    }
 }

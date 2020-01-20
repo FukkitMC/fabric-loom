@@ -11,21 +11,21 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'net.fabricmc'
+group = 'io.github.fukkitmc'
 archivesBaseName = project.name
 version = '0.2.6-SNAPSHOT'
 
-def build = "local"
-def ENV = System.getenv()
-if (ENV.BUILD_NUMBER) {
-	build = "jenkins #${ENV.BUILD_NUMBER}"
-}
+def build = "0"
 
 repositories {
 	mavenCentral()
 	maven {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
+	}
+	maven {
+		name = "FukkitMC"
+		url = uri("https://raw.githubusercontent.com/FukkitMC/fukkit-repo/master")
 	}
 }
 
@@ -44,9 +44,12 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.2.0.57') {
+	implementation ('io.github.fukkitmc:tiny-remapper:0.2.1.0') {
 		transitive = false
 	}
+
+	// Gloom
+	implementation ('io.github.fukkitmc:gloom:1.0.4')
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
@@ -60,26 +63,10 @@ dependencies {
 	testImplementation("org.spockframework:spock-core:1.3-groovy-2.4")
 }
 
-configurations.all {
-	resolutionStrategy {
-		force 'org.codehaus.groovy:groovy-all:2.4.12'
-	}
-}
-
 jar {
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = 'sources'
-	from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
-	from javadoc.destinationDir
 }
 
 apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
@@ -107,32 +94,10 @@ gradlePlugin {
 }
 
 publishing {
-	publications {
-		plugin(MavenPublication) { publication ->
-			groupId project.group
-			artifactId project.archivesBaseName
-			version project.version
-
-			from components["java"]
-
-			artifact sourcesJar
-			artifact javadocJar
-		}
-	}
 	repositories {
 		maven {
-			url "http://mavenupload.modmuss50.me/"
-			if (project.hasProperty('mavenPass')) {
-				credentials {
-					username 'buildslave'
-					password project.getProperty('mavenPass')
-				}
-			}
+			name = "Fukkit"
+			url = uri("../fukkit-repo")
 		}
 	}
-}
-configurations.all {
-    resolutionStrategy {
-        force 'org.codehaus.groovy:groovy-all:2.4.12'
-    }
 }

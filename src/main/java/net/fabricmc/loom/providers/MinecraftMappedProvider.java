@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+import io.github.fukkitmc.gloom.DefinitionsKt;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -36,6 +37,7 @@ import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.MapJarsTiny;
 
 public class MinecraftMappedProvider extends DependencyProvider {
+	private String extra;
 	public File MINECRAFT_MAPPED_JAR;
 	public File MINECRAFT_INTERMEDIARY_JAR;
 
@@ -63,7 +65,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				getIntermediaryJar().delete();
 			}
 
-			new MapJarsTiny().mapJars(minecraftProvider, this, project);
+			MapJarsTiny.mapJars(minecraftProvider, this, project);
 		}
 
 		if (!MINECRAFT_MAPPED_JAR.exists()) {
@@ -72,18 +74,27 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		project.getDependencies().add(Constants.MINECRAFT_NAMED,
-						project.getDependencies().module("net.minecraft:minecraft:" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
+						project.getDependencies().module("net.minecraft:minecraft:" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + extra));
 		project.getDependencies().add(Constants.MINECRAFT_INTERMEDIARY,
 						project.getDependencies().module("net.minecraft:minecraft:" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
 	}
 
-	public void initFiles(Project project, MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
+	public void initFiles(Project project, MinecraftProvider minecraftProvider, MappingsProvider mappings) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		this.minecraftProvider = minecraftProvider;
+
+		extra = "";
+		File cache = extension.getUserCache();
+
+		if (!extension.definitions.getDefinitions().isEmpty()) {
+			cache = extension.getRootProjectTransformedCache();
+			extra = "-" + Integer.toString(DefinitionsKt.toString(extension.definitions).hashCode(), 36);
+		}
+
 		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(),
-						"minecraft-" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
-		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(),
-						"minecraft-" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
+				"minecraft-" + getIntermediaryJarVersionString(mappings.mappingsName, mappings.mappingsVersion) + ".jar");
+		MINECRAFT_MAPPED_JAR = new File(cache,
+				"minecraft-" + getNamedJarVersionString(mappings.mappingsName, mappings.mappingsVersion) + extra + ".jar");
 	}
 
 	private String getNamedJarVersionString(String mappingsName, String mappingsVersion) {

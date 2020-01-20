@@ -25,12 +25,10 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -38,6 +36,9 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
+import io.github.fukkitmc.gloom.ClassDefinition;
+import io.github.fukkitmc.gloom.DefinitionsKt;
+import io.github.fukkitmc.gloom.GloomDefinitions;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -61,6 +62,8 @@ public class LoomGradleExtension {
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
+	public final GloomDefinitions definitions = new GloomDefinitions(new HashMap<>());
+
 	//Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
@@ -78,6 +81,18 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
+	}
+
+	public void addDefinitions(ClassDefinition... definitions) {
+		for (ClassDefinition definition : definitions) {
+			this.definitions.getDefinitions().put(definition.getType().getInternalName(), definition);
+		}
+	}
+
+	public void loadDefinitions(Object... files) throws IOException {
+		for (File file : project.files(files).getFiles()) {
+			this.definitions.getDefinitions().putAll(DefinitionsKt.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions());
+		}
 	}
 
 	public void addUnmappedMod(Path file) {
@@ -114,6 +129,16 @@ public class LoomGradleExtension {
 		}
 
 		return projectCache;
+	}
+
+	public File getRootProjectTransformedCache() {
+		File cache = new File(getRootProjectPersistentCache(), "transformed-minecraft");
+
+		if (!cache.exists()) {
+			cache.mkdirs();
+		}
+
+		return cache;
 	}
 
 	public File getRootProjectBuildCache() {

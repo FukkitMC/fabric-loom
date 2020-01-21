@@ -36,9 +36,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
-import io.github.fukkitmc.gloom.ClassDefinition;
-import io.github.fukkitmc.gloom.DefinitionsKt;
-import io.github.fukkitmc.gloom.GloomDefinitions;
+import io.github.fukkitmc.gloom.*;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -85,14 +83,40 @@ public class LoomGradleExtension {
 
 	public void addDefinitions(ClassDefinition... definitions) {
 		for (ClassDefinition definition : definitions) {
-			this.definitions.getDefinitions().put(definition.getType().getInternalName(), definition);
+			merge(definition);
 		}
 	}
 
 	public void loadDefinitions(Object... files) throws IOException {
 		for (File file : project.files(files).getFiles()) {
-			this.definitions.getDefinitions().putAll(DefinitionsKt.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions());
+			DefinitionsKt.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions().values()
+					.forEach(this::merge);
 		}
+	}
+
+	private void merge(ClassDefinition definition) {
+		String name = definition.getType().getInternalName();
+		ClassDefinition d = this.definitions.get(name);
+
+		if (d == null) {
+			d = definition;
+		} else {
+			Set<Member> pF = new HashSet<>(d.getPublicizedFields());
+			Set<Member> pM = new HashSet<>(d.getPublicizedMethods());
+			Set<Member> mF = new HashSet<>(d.getMutableFields());
+			Set<SyntheticField> sF = new HashSet<>(d.getSyntheticFields());
+			Set<SyntheticMethod> sM = new HashSet<>(d.getSyntheticMethods());
+
+			pF.addAll(definition.getPublicizedFields());
+			pM.addAll(definition.getPublicizedMethods());
+			mF.addAll(definition.getMutableFields());
+			sF.addAll(definition.getSyntheticFields());
+			sM.addAll(definition.getSyntheticMethods());
+
+			d = new ClassDefinition(d.getType(), pF, pM, mF, sF, sM);
+		}
+
+		this.definitions.getDefinitions().put(name, d);
 	}
 
 	public void addUnmappedMod(Path file) {

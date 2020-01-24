@@ -60,6 +60,7 @@ import net.fabricmc.tinyremapper.TinyUtils;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
@@ -164,20 +165,20 @@ public class RemapJarTask extends Jar {
 			provider.getEmitters().forEach((name, emitter) -> {
 				if (emitter.shouldEmitAccessor()) {
 					mixins.add(emitter.getAccessor());
-					outputConsumer.accept(emitter.getAccessor(), write(emitter::emitAccessor));
+					outputConsumer.accept(emitter.getAccessor(), write(remapper.getRemapper(), emitter::emitAccessor));
 				}
 
 				if (emitter.shouldEmitHolder()) {
-					outputConsumer.accept(emitter.getHolder(), write(emitter::emitHolder));
+					outputConsumer.accept(emitter.getHolder(), write(remapper.getRemapper(), emitter::emitHolder));
 				}
 
 				if (emitter.shouldEmitInterface()) {
-					outputConsumer.accept(emitter.getInterface(), write(emitter::emitInterface));
+					outputConsumer.accept(emitter.getInterface(), write(remapper.getRemapper(), emitter::emitInterface));
 				}
 
 				if (emitter.shouldEmitMixin()) {
 					mixins.add(emitter.getMixin());
-					outputConsumer.accept(emitter.getMixin(), write(emitter::emitMixin));
+					outputConsumer.accept(emitter.getMixin(), write(remapper.getRemapper(), emitter::emitMixin));
 				}
 			});
 		} catch (Exception e) {
@@ -257,9 +258,9 @@ public class RemapJarTask extends Jar {
 		return addNestedDependencies;
 	}
 
-	private static byte[] write(Consumer<ClassVisitor> consumer) {
+	private static byte[] write(Remapper remapper, Consumer<ClassVisitor> consumer) {
 		ClassWriter writer = new ClassWriter(0);
-		consumer.accept(writer);
+		consumer.accept(new ClassRemapper(writer, remapper));
 		return writer.toByteArray();
 	}
 }

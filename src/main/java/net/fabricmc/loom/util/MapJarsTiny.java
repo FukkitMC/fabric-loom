@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.util;
 
-import io.github.fukkitmc.gloom.GloomDefinitions;
-import io.github.fukkitmc.gloom.GloomInjector;
+import io.github.fukkitmc.gloom.asm.GloomInjector;
+import io.github.fukkitmc.gloom.definitions.GloomDefinitions;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;

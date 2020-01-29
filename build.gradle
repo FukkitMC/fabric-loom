@@ -49,7 +49,7 @@ dependencies {
 	}
 
 	// Gloom
-	implementation ('io.github.fukkitmc:gloom:1.0.6')
+	implementation ('io.github.fukkitmc:gloom:2.0.1')
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')

@@ -39,7 +39,10 @@ import java.util.zip.ZipEntry;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.github.fukkitmc.gloom.*;
+import io.github.fukkitmc.gloom.asm.Illuminate;
+import io.github.fukkitmc.gloom.definitions.GloomDefinitions;
+import io.github.fukkitmc.gloom.emitter.EmitterProvider;
+import io.github.fukkitmc.gloom.emitter.emitters.MixinEmitter;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -57,7 +60,6 @@ import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -129,22 +131,19 @@ public class RemapJarTask extends Jar {
 						random + "/holder/" + owner + "Holder",
 						random + "/itf/" + owner + "Interface",
 						random + "/mixin/a/" + owner + "Accessor") {
-					@NotNull
 					@Override
-					public String getField(@NotNull String name, @NotNull String descriptor) {
+					public String getField(String name, String descriptor) {
 						return asmMapper.get().mapFieldName(owner, name, descriptor);
 					}
 
-					@NotNull
 					@Override
-					public String getFieldTarget(@NotNull Pair field) {
-						return "L" + owner + ";" + asmMapper.get().mapFieldName(owner, field.getName(), field.getDesc()) + ":" + field.getDesc();
+					public String getFieldTarget(Pair field) {
+						return "L" + owner + ";" + asmMapper.get().mapFieldName(owner, field.name, field.desc) + ":" + field.desc;
 					}
 
-					@NotNull
 					@Override
-					public String getMethodTarget(@NotNull Pair method) {
-						return "L" + owner + ";" + asmMapper.get().mapMethodName(owner, method.getName(), method.getDesc()) + method.getDesc();
+					public String getMethodTarget(Pair method) {
+						return "L" + owner + ";" + asmMapper.get().mapMethodName(owner, method.name, method.desc) + method.desc;
 					}
 				});
 		Illuminate illuminate = new Illuminate(definitions, provider);

@@ -28,7 +28,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Consumer;
 
-import io.github.fukkitmc.gloom.DefinitionsKt;
+import io.github.fukkitmc.gloom.DefinitionSerializer;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -88,7 +88,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 		if (!extension.definitions.getDefinitions().isEmpty()) {
 			cache = extension.getRootProjectTransformedCache();
-			extra = "-" + Integer.toString(DefinitionsKt.toString(extension.definitions).hashCode(), 36);
+			extra = "-" + Integer.toString(DefinitionSerializer.toString(extension.definitions).hashCode(), 36);
 		}
 
 		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(),

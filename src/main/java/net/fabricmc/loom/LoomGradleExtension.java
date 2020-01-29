@@ -36,7 +36,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
-import io.github.fukkitmc.gloom.*;
+import io.github.fukkitmc.gloom.DefinitionSerializer;
+import io.github.fukkitmc.gloom.definitions.*;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -60,7 +61,7 @@ public class LoomGradleExtension {
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
-	public final GloomDefinitions definitions = new GloomDefinitions(new HashMap<>());
+	public GloomDefinitions definitions = new GloomDefinitions(new HashSet<>());
 
 	//Not to be set in the build.gradle
 	private Project project;
@@ -89,34 +90,37 @@ public class LoomGradleExtension {
 
 	public void loadDefinitions(Object... files) throws IOException {
 		for (File file : project.files(files).getFiles()) {
-			DefinitionsKt.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions().values()
-					.forEach(this::merge);
+			DefinitionSerializer.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions().forEach(this::merge);
 		}
 	}
 
 	private void merge(ClassDefinition definition) {
-		String name = definition.getType().getInternalName();
+		String name = definition.getName();
 		ClassDefinition d = this.definitions.get(name);
 
 		if (d == null) {
 			d = definition;
 		} else {
-			Set<Member> pF = new HashSet<>(d.getPublicizedFields());
-			Set<Member> pM = new HashSet<>(d.getPublicizedMethods());
-			Set<Member> mF = new HashSet<>(d.getMutableFields());
+			Set<String> iI = new HashSet<>(d.getInjectInterfaces());
+			Set<SelfMember> pF = new HashSet<>(d.getPublicizedFields());
+			Set<SelfMember> pM = new HashSet<>(d.getPublicizedMethods());
+			Set<SelfMember> mF = new HashSet<>(d.getMutableFields());
 			Set<SyntheticField> sF = new HashSet<>(d.getSyntheticFields());
 			Set<SyntheticMethod> sM = new HashSet<>(d.getSyntheticMethods());
 
+			iI.addAll(definition.getInjectInterfaces());
 			pF.addAll(definition.getPublicizedFields());
 			pM.addAll(definition.getPublicizedMethods());
 			mF.addAll(definition.getMutableFields());
 			sF.addAll(definition.getSyntheticFields());
 			sM.addAll(definition.getSyntheticMethods());
 
-			d = new ClassDefinition(d.getType(), pF, pM, mF, sF, sM);
+			d = new ClassDefinition(d.getName(), iI, pF, pM, mF, sF, sM);
 		}
 
-		this.definitions.getDefinitions().put(name, d);
+		Set<ClassDefinition> classDefinitions = new HashSet<>(definitions.getDefinitions());
+		classDefinitions.add(d);
+		this.definitions = new GloomDefinitions(classDefinitions);
 	}
 
 	public void addUnmappedMod(Path file) {

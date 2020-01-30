@@ -119,6 +119,7 @@ public class LoomGradleExtension {
 		}
 
 		Set<ClassDefinition> classDefinitions = new HashSet<>(definitions.getDefinitions());
+		classDefinitions.remove(this.definitions.get(name));
 		classDefinitions.add(d);
 		this.definitions = new GloomDefinitions(classDefinitions);
 	}

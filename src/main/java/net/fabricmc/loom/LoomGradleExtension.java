@@ -95,33 +95,7 @@ public class LoomGradleExtension {
 	}
 
 	private void merge(ClassDefinition definition) {
-		String name = definition.getName();
-		ClassDefinition d = this.definitions.get(name);
-
-		if (d == null) {
-			d = definition;
-		} else {
-			Set<String> iI = new HashSet<>(d.getInjectInterfaces());
-			Set<SelfMember> pF = new HashSet<>(d.getPublicizedFields());
-			Set<SelfMember> pM = new HashSet<>(d.getPublicizedMethods());
-			Set<SelfMember> mF = new HashSet<>(d.getMutableFields());
-			Set<SyntheticField> sF = new HashSet<>(d.getSyntheticFields());
-			Set<SyntheticMethod> sM = new HashSet<>(d.getSyntheticMethods());
-
-			iI.addAll(definition.getInjectInterfaces());
-			pF.addAll(definition.getPublicizedFields());
-			pM.addAll(definition.getPublicizedMethods());
-			mF.addAll(definition.getMutableFields());
-			sF.addAll(definition.getSyntheticFields());
-			sM.addAll(definition.getSyntheticMethods());
-
-			d = new ClassDefinition(d.getName(), iI, pF, pM, mF, sF, sM);
-		}
-
-		Set<ClassDefinition> classDefinitions = new HashSet<>(definitions.getDefinitions());
-		classDefinitions.remove(this.definitions.get(name));
-		classDefinitions.add(d);
-		this.definitions = new GloomDefinitions(classDefinitions);
+		definitions = definitions.merge(definition);
 	}
 
 	public void addUnmappedMod(Path file) {

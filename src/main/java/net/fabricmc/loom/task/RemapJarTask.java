@@ -127,10 +127,10 @@ public class RemapJarTask extends Jar {
 		EmitterProvider<MixinEmitter> provider = new EmitterProvider<>(owner ->
 				new MixinEmitter(
 						owner,
-						random + "/mixin/m/" + owner + "Mixin",
-						random + "/holder/" + owner + "Holder",
 						random + "/itf/" + owner + "Interface",
-						random + "/mixin/a/" + owner + "Accessor") {
+						random + "/holder/" + owner + "Holder",
+						random + "/mixin/a/" + owner + "Accessor",
+						random + "/mixin/m/" + owner + "Mixin") {
 					@Override
 					public String getField(String name, String descriptor) {
 						return asmMapper.get().mapFieldName(owner, name, descriptor);

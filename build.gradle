@@ -15,7 +15,7 @@ group = 'io.github.fukkitmc'
 archivesBaseName = project.name
 version = 'g0.2.6-SNAPSHOT'
 
-def build = "6"
+def build = "7"
 
 repositories {
 	mavenCentral()
@@ -49,7 +49,7 @@ dependencies {
 	}
 
 	// Gloom
-	implementation ('io.github.fukkitmc:gloom:2.0.6')
+	implementation ('io.github.fukkitmc:gloom:2.0.7')
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')

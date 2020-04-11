@@ -39,7 +39,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MapJarsTiny {
-	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, File mappedJar, File intermediaryJar, Project project) throws IOException {
+	public static void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, File mappedJar, File intermediaryJar, Project project) throws IOException {
 		String fromM = "official";
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);

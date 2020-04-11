@@ -66,7 +66,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			}
 
 			try {
-				new MapJarsTiny().mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
+				MapJarsTiny.mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
 			} catch (Throwable t) {
 				//Cleanup some some things that may be in a bad state now
 				minecraftMappedJar.delete();

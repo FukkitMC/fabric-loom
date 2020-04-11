@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.fabricmc.loom.util.GloomJarProcessor;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
@@ -52,6 +53,10 @@ public class JarProcessorManager {
 
 		if (extension.accessWidener != null) {
 			jarProcessors.add(new AccessWidenerJarProcessor());
+		}
+
+		if (!extension.definitions.getDefinitions().isEmpty()) {
+			jarProcessors.add(new GloomJarProcessor());
 		}
 
 		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));

@@ -69,6 +69,6 @@ public class GloomJarProcessor implements JarProcessor {
 
     @Override
     public boolean isInvalid(File file) {
-        return Arrays.equals(ZipUtil.unpackEntry(file, "gloom.sha256"), hash);
+        return !Arrays.equals(ZipUtil.unpackEntry(file, "gloom.sha256"), hash);
     }
 }

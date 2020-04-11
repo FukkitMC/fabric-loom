@@ -15,8 +15,6 @@ group = 'io.github.fukkitmc'
 archivesBaseName = project.name
 version = 'g0.2.7-SNAPSHOT'
 
-def build = "1"
-
 repositories {
 	mavenCentral()
 	maven {
@@ -70,7 +68,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': version + " Build(" + build + ")"
+		attributes 'Implementation-Version': version
 	}
 }
 

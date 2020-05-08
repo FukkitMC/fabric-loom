@@ -61,7 +61,6 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 
 		VsCodeLaunch launch = new VsCodeLaunch();
-		launch.add(RunConfig.clientRunConfig(project));
 		launch.add(RunConfig.serverRunConfig(project));
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();

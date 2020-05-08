@@ -24,6 +24,14 @@
 
 package net.fabricmc.loom.providers;
 
+import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.fabricmc.loom.util.*;
+import org.gradle.api.GradleException;
+import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -31,23 +39,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.ZipError;
-
-import com.google.common.io.Files;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.gradle.api.GradleException;
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-
-import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.DependencyProvider;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.ManifestVersion;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
-import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
@@ -56,9 +47,7 @@ public class MinecraftProvider extends DependencyProvider {
 	private MinecraftLibraryProvider libraryProvider;
 
 	private File minecraftJson;
-	private File minecraftClientJar;
 	private File minecraftServerJar;
-	private File minecraftMergedJar;
 
 	Gson gson = new Gson();
 
@@ -83,13 +72,10 @@ public class MinecraftProvider extends DependencyProvider {
 		addDependency(getProject().files(this.getClass().getProtectionDomain().getCodeSource().getLocation()), "compileOnly");
 
 		if (offline) {
-			if (minecraftClientJar.exists() && minecraftServerJar.exists()) {
-				getProject().getLogger().debug("Found client and server jars, presuming up-to-date");
-			} else if (minecraftMergedJar.exists()) {
-				//Strictly we don't need the split jars if the merged one exists, let's try go on
-				getProject().getLogger().warn("Missing game jar but merged jar present, things might end badly");
+			if (minecraftServerJar.exists()) {
+				getProject().getLogger().debug("Found server jars, presuming up-to-date");
 			} else {
-				throw new GradleException("Missing jar(s); Client: " + minecraftClientJar.exists() + ", Server: " + minecraftServerJar.exists());
+				throw new GradleException("Missing jar(s); Server: " + minecraftServerJar.exists());
 			}
 		} else {
 			downloadJars(getProject().getLogger());
@@ -97,25 +83,11 @@ public class MinecraftProvider extends DependencyProvider {
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
-
-		if (!minecraftMergedJar.exists()) {
-			try {
-				mergeJars(getProject().getLogger());
-			} catch (ZipError e) {
-				DownloadUtil.delete(minecraftClientJar);
-				DownloadUtil.delete(minecraftServerJar);
-
-				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw new RuntimeException();
-			}
-		}
 	}
 
 	private void initFiles() {
 		minecraftJson = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-info.json");
-		minecraftClientJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
 		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
-		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -172,28 +144,14 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
-		if (!minecraftClientJar.exists() || (!Checksum.equals(minecraftClientJar, versionInfo.downloads.get("client").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(minecraftClientJar.toPath()))) {
-			logger.debug("Downloading Minecraft {} client jar", minecraftVersion);
-			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), minecraftClientJar, logger);
-		}
-
 		if (!minecraftServerJar.exists() || (!Checksum.equals(minecraftServerJar, versionInfo.downloads.get("server").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(minecraftServerJar.toPath()))) {
 			logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), minecraftServerJar, logger);
 		}
 	}
 
-	private void mergeJars(Logger logger) throws IOException {
-		logger.lifecycle(":merging jars");
-
-		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
-			jarMerger.enableSyntheticParamsOffset();
-			jarMerger.merge();
-		}
-	}
-
-	public File getMergedJar() {
-		return minecraftMergedJar;
+	public File getServerJar() {
+		return minecraftServerJar;
 	}
 
 	public String getMinecraftVersion() {

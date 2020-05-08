@@ -29,7 +29,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 public class Constants {
-	public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
 	public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
 
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";

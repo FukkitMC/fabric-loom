@@ -50,7 +50,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mappings file not found");
 		}
 
-		if (!getExtension().getMinecraftProvider().getMergedJar().exists()) {
+		if (!getExtension().getMinecraftProvider().getServerJar().exists()) {
 			throw new RuntimeException("input merged jar not found");
 		}
 
@@ -101,7 +101,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	protected String getJarVersionString(String type) {
-		return String.format("%s-%s-%s-%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion);
+		return String.format("%s-server-%s-%s-%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion);
 	}
 
 	public Collection<File> getMapperPaths() {

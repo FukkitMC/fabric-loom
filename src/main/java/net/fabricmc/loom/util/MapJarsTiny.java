@@ -47,7 +47,7 @@ public class MapJarsTiny {
 
 		Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
-		Path input = jarProvider.getMergedJar().toPath();
+		Path input = jarProvider.getServerJar().toPath();
 		Path outputMapped = mappedJar.toPath();
 		Path outputIntermediary = intermediaryJar.toPath();
 

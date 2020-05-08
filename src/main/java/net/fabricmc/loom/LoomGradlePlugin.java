@@ -47,7 +47,6 @@ import net.fabricmc.loom.task.MigrateMappingsTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapLineNumbersTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
@@ -157,11 +156,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		});
 
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class);
-
-		tasks.register("runClient", RunClientTask.class, t -> {
-			t.dependsOn("assemble", "downloadAssets");
-			t.setGroup("minecraftMapped");
-		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
 			t.dependsOn("assemble");

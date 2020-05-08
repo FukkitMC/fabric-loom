@@ -48,7 +48,6 @@ import org.w3c.dom.Node;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
 
 public class RunConfig {
 	public String configName;
@@ -102,7 +101,7 @@ public class RunConfig {
 		switch (extension.getLoaderLaunchMethod()) {
 		case "launchwrapper":
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
-			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
+			runConfig.programArgs = "--tweakClass " + Constants.DEFAULT_FABRIC_SERVER_TWEAKER;
 			break;
 		default:
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
@@ -141,20 +140,6 @@ public class RunConfig {
 		}
 	}
 
-	public static RunConfig clientRunConfig(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
-		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
-
-		RunConfig ideaClient = new RunConfig();
-		populate(project, extension, ideaClient, "client");
-		ideaClient.configName = "Minecraft Client";
-		ideaClient.vmArgs += getOSClientJVMArgs();
-		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
-
-		return ideaClient;
-	}
-
 	public static RunConfig serverRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
@@ -186,14 +171,6 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
 
 		return dummyConfig;
-	}
-
-	public static String getOSClientJVMArgs() {
-		if (OperatingSystem.getOS().equalsIgnoreCase("osx")) {
-			return " -XstartOnFirstThread";
-		}
-
-		return "";
 	}
 
 	private static String getMainClass(String side, LoomGradleExtension extension) {

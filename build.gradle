@@ -13,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'io.github.fukkitmc'
 archivesBaseName = project.name
-version = 'gs0.2.7-SNAPSHOT'
+version = 'gsa0.2.7-SNAPSHOT'
 
 repositories {
 	mavenCentral()

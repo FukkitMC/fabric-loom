@@ -24,94 +24,87 @@
 
 package net.fabricmc.loom.util.accesswidener;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.mappings.EntryTriple;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class AccessWidenerRemapper {
-    private final AccessWidener input;
-    private final String from, to;
+	private final AccessWidener input;
+	private final String from, to;
 
-    private final Map<String, String> classNames = new HashMap<>();
-    private final Map<EntryTriple, EntryTriple> fieldNames = new HashMap<>();
-    private final Map<EntryTriple, EntryTriple> methodNames = new HashMap<>();
+	private Map<String, String> classNames = new HashMap<>();
+	private Map<EntryTriple, EntryTriple> fieldNames = new HashMap<>();
+	private Map<EntryTriple, EntryTriple> methodNames = new HashMap<>();
 
-    public AccessWidenerRemapper(AccessWidener input, TinyTree tinyTree, String to) {
-        this.input = input;
-        this.from = input.namespace;
-        this.to = to;
-        populateMappings(tinyTree);
-    }
+	public AccessWidenerRemapper(AccessWidener input, TinyTree tinyTree, String to) {
+		this.input = input;
+		this.from = input.namespace;
+		this.to = to;
+		populateMappings(tinyTree);
+	}
 
-    private void populateMappings(TinyTree tinyTree) {
-        if (!tinyTree.getMetadata().getNamespaces().contains(from)) {
-            throw new UnsupportedOperationException("Unknown namespace: " + from);
-        }
+	private void populateMappings(TinyTree tinyTree) {
+		if (!tinyTree.getMetadata().getNamespaces().contains(from)) {
+			throw new UnsupportedOperationException("Unknown namespace: " + from);
+		}
 
-        if (!tinyTree.getMetadata().getNamespaces().contains(to)) {
-            throw new UnsupportedOperationException("Unknown namespace: " + to);
-        }
+		if (!tinyTree.getMetadata().getNamespaces().contains(to)) {
+			throw new UnsupportedOperationException("Unknown namespace: " + to);
+		}
 
-        for (ClassDef classDef : tinyTree.getClasses()) {
-            classNames.put(classDef.getName(from), classDef.getName(to));
+		for (ClassDef classDef : tinyTree.getClasses()) {
+			classNames.put(classDef.getName(from), classDef.getName(to));
 
-            for (FieldDef fieldDef : classDef.getFields()) {
-                EntryTriple fromEntry = new EntryTriple(classDef.getName(from), fieldDef.getName(from), fieldDef.getDescriptor(from));
-                EntryTriple toEntry = new EntryTriple(classDef.getName(to), fieldDef.getName(to), fieldDef.getDescriptor(to));
-                fieldNames.put(fromEntry, toEntry);
-            }
+			for (FieldDef fieldDef : classDef.getFields()) {
+				EntryTriple fromEntry = new EntryTriple(classDef.getName(from), fieldDef.getName(from), fieldDef.getDescriptor(from));
+				EntryTriple toEntry = new EntryTriple(classDef.getName(to), fieldDef.getName(to), fieldDef.getDescriptor(to));
+				fieldNames.put(fromEntry, toEntry);
+			}
 
-            for (MethodDef methodDef : classDef.getMethods()) {
-                EntryTriple fromEntry = new EntryTriple(classDef.getName(from), methodDef.getName(from), methodDef.getDescriptor(from));
-                EntryTriple toEntry = new EntryTriple(classDef.getName(to), methodDef.getName(to), methodDef.getDescriptor(to));
-                methodNames.put(fromEntry, toEntry);
-            }
-        }
-    }
+			for (MethodDef methodDef : classDef.getMethods()) {
+				EntryTriple fromEntry = new EntryTriple(classDef.getName(from), methodDef.getName(from), methodDef.getDescriptor(from));
+				EntryTriple toEntry = new EntryTriple(classDef.getName(to), methodDef.getName(to), methodDef.getDescriptor(to));
+				methodNames.put(fromEntry, toEntry);
+			}
+		}
+	}
 
-    public AccessWidener remap() {
-        //Dont remap if we dont need to
-        if (input.namespace.equals(to)) {
-            return input;
-        }
+	public AccessWidener remap() {
+		//Dont remap if we dont need to
+		if (input.namespace.equals(to)) {
+			return input;
+		}
 
-        AccessWidener remapped = new AccessWidener();
-        remapped.namespace = to;
+		AccessWidener remapped = new AccessWidener();
+		remapped.namespace = to;
 
-//		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
-//			remapped.classAccess.put(findMapping(classNames, entry.getKey()), entry.getValue());
-//		}
-//
-//		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
-//			remapped.addOrMerge(remapped.methodAccess, findMapping(methodNames, entry.getKey()), entry.getValue());
-//		}
-//
-//		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
-//			remapped.addOrMerge(remapped.fieldAccess, findMapping(fieldNames, entry.getKey()), entry.getValue());
-//		}
+		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
+			remapped.classAccess.put(findMapping(classNames, entry.getKey()), entry.getValue());
+		}
 
-        input.classAccess.forEach((s, access) -> remapped.classAccess.put(s, AccessWidener.ClassAccess.ACCESSIBLE_EXTENDABLE));
+		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
+			remapped.addOrMerge(remapped.methodAccess, findMapping(methodNames, entry.getKey()), entry.getValue());
+		}
 
-        input.methodAccess.forEach((s, access) -> remapped.methodAccess.put(s, AccessWidener.MethodAccess.ACCESSIBLE_EXTENDABLE));
+		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
+			remapped.addOrMerge(remapped.fieldAccess, findMapping(fieldNames, entry.getKey()), entry.getValue());
+		}
 
-        input.fieldAccess.forEach((s, access) -> remapped.fieldAccess.put(s, AccessWidener.FieldAccess.ACCESSIBLE_MUTABLE));
+		return remapped;
+	}
 
-        return remapped;
-    }
+	private static <K, V> V findMapping(Map<K, V> map, K key) {
+		V value = map.get(key);
 
-//	private static <K, V> V findMapping(Map<K, V> map, K key) {
-//		V value = map.get(key);
-//
-//		if (value == null) {
-////			throw new RuntimeException("Failed to find mapping for " + key.toString());
-//			System.out.println("Ignoring invalid mapping: " + key.toString());
-//		}
-//
-//		return value;
-//	}
+		if (value == null) {
+			throw new RuntimeException("Failed to find mapping for " + key.toString());
+		}
+
+		return value;
+	}
 }

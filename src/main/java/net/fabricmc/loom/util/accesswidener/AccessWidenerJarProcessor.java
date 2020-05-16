@@ -95,7 +95,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	@Override
-	public void process(File file) {
+	public void process(File file, File compileOnlyJar) {
 		project.getLogger().lifecycle("Processing file: " + file.getName());
 		ZipUtil.transformEntries(file, getTransformers(accessWidener.getTargets()));
 		ZipUtil.addEntry(file, "aw.sha256", inputHash);

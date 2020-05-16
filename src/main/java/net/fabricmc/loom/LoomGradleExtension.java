@@ -25,10 +25,13 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
@@ -38,6 +41,9 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
+import io.github.fukkitmc.gloom.DefinitionSerializer;
+import io.github.fukkitmc.gloom.definitions.ClassDefinition;
+import io.github.fukkitmc.gloom.definitions.GloomDefinitions;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -60,6 +66,7 @@ public class LoomGradleExtension {
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
+	public GloomDefinitions definitions = new GloomDefinitions(new HashSet<>());
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
@@ -81,6 +88,22 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
+	}
+
+	public void addDefinitions(ClassDefinition... definitions) {
+		for (ClassDefinition definition : definitions) {
+			merge(definition);
+		}
+	}
+
+	public void loadDefinitions(Object... files) throws IOException {
+		for (File file : project.files(files).getFiles()) {
+			DefinitionSerializer.fromString(new String(Files.readAllBytes(file.toPath()))).getDefinitions().forEach(this::merge);
+		}
+	}
+
+	private void merge(ClassDefinition definition) {
+		definitions = definitions.merge(definition);
 	}
 
 	public void addUnmappedMod(Path file) {

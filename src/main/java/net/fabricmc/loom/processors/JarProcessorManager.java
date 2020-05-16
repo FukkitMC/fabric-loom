@@ -31,8 +31,9 @@ import java.util.List;
 
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.util.gloom.GloomJarProcessor;
 
 public class JarProcessorManager {
 	private final Project project;
@@ -54,6 +55,10 @@ public class JarProcessorManager {
 			jarProcessors.add(new AccessWidenerJarProcessor());
 		}
 
+		if (extension.definitions != null && !extension.definitions.getDefinitions().isEmpty()) {
+			jarProcessors.add(new GloomJarProcessor());
+		}
+
 		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));
 		return Collections.unmodifiableList(jarProcessors);
 	}
@@ -70,9 +75,9 @@ public class JarProcessorManager {
 		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
 	}
 
-	public void process(File file) {
+	public void process(File file, File compileOnlyJar) {
 		for (JarProcessor jarProcessor : jarProcessors) {
-			jarProcessor.process(file);
+			jarProcessor.process(file, compileOnlyJar);
 		}
 	}
 

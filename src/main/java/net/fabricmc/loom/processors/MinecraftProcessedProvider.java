@@ -40,6 +40,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
 
 	private File projectMappedJar;
+	private File projectCompileOnlyJar;
 
 	private final JarProcessorManager jarProcessorManager;
 
@@ -50,6 +51,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
+		projectCompileOnlyJar.delete();
+
 		if (jarProcessorManager.isInvalid(projectMappedJar)) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
 			invalidateJars();
@@ -60,13 +63,17 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 				throw new RuntimeException("Failed to copy source jar", e);
 			}
 
-			jarProcessorManager.process(projectMappedJar);
+			jarProcessorManager.process(projectMappedJar, projectCompileOnlyJar);
 		}
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
 		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
+
+		if (projectCompileOnlyJar.exists()) {
+			getProject().getDependencies().add("compileOnly", getProject().files(projectCompileOnlyJar));
+		}
 	}
 
 	private void invalidateJars() {
@@ -88,6 +95,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
 		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		projectCompileOnlyJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + "-compileOnly.jar");
 	}
 
 	@Override

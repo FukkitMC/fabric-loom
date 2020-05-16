@@ -31,7 +31,7 @@ import org.gradle.api.Project;
 public interface JarProcessor {
 	void setup(Project project);
 
-	void process(File file);
+	void process(File file, File compileOnlyJar);
 
 	boolean isInvalid(File file);
 }

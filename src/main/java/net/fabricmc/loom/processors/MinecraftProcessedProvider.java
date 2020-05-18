@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
@@ -51,8 +52,6 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		projectCompileOnlyJar.delete();
-
 		if (jarProcessorManager.isInvalid(projectMappedJar)) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
 			invalidateJars();
@@ -72,7 +71,9 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
 
 		if (projectCompileOnlyJar.exists()) {
-			getProject().getDependencies().add("compileOnly", getProject().files(projectCompileOnlyJar));
+			getProject().afterEvaluate($ -> $.afterEvaluate(project -> {
+				project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, getProject().files(projectCompileOnlyJar));
+			}));
 		}
 	}
 

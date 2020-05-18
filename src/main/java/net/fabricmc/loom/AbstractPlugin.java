@@ -80,6 +80,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		this.project = target;
 
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+		project.getLogger().lifecycle("Friendly reminder to use ECJ!!! Javac completely fails!!!");
+		project.getLogger().lifecycle("Also RemapJarTask uses *lots* of memory so increase your heap!!!");
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));

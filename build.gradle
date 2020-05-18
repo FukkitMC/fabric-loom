@@ -68,7 +68,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': version + " Build(" + build + ")"
+		attributes 'Implementation-Version': version + " Build(3)"
 	}
 }
 
@@ -159,15 +159,11 @@ publishing {
 			})
 		}
 	}
+
 	repositories {
 		maven {
-			url "http://mavenupload.modmuss50.me/"
-			if (project.hasProperty('mavenPass')) {
-				credentials {
-					username 'buildslave'
-					password project.getProperty('mavenPass')
-				}
-			}
+			name = "Fukkit"
+			url = uri("../fukkit-repo")
 		}
 	}
 }

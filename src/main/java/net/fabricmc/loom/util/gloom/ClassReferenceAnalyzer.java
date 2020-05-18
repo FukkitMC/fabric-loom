@@ -1,7 +1,7 @@
 package net.fabricmc.loom.util.gloom;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -10,7 +10,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 class ClassReferenceAnalyzer extends ClassVisitor {
-	final Map<String, Boolean> referenced = new HashMap<>();
+	final Set<String> referenced = new HashSet<>();
 
 	ClassReferenceAnalyzer(ClassVisitor classVisitor) {
 		super(Opcodes.ASM8, classVisitor);
@@ -18,15 +18,15 @@ class ClassReferenceAnalyzer extends ClassVisitor {
 
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-		referenced.put(name, false);
+		referenced.add(name);
 
 		if (superName != null) {
-			referenced.put(superName, false);
+			referenced.add(superName);
 		}
 
 		if (interfaces != null) {
 			for (String i : interfaces) {
-				addType(Type.getObjectType(i), true);
+				addType(Type.getObjectType(i));
 			}
 		}
 
@@ -35,28 +35,24 @@ class ClassReferenceAnalyzer extends ClassVisitor {
 
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		addType(Type.getType(descriptor), false);
+		addType(Type.getType(descriptor));
 		return super.visitField(access, name, descriptor, signature, value);
 	}
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		addType(Type.getReturnType(descriptor), false);
+		addType(Type.getReturnType(descriptor));
 
 		for (Type type : Type.getArgumentTypes(descriptor)) {
-			addType(type, false);
+			addType(type);
 		}
 
 		return super.visitMethod(access, name, descriptor, signature, exceptions);
 	}
 
-	private void addType(Type type, boolean i) {
+	private void addType(Type type) {
 		if (type.getSort() == Type.OBJECT) {
-			if (i) {
-				referenced.put(type.getInternalName(), true);
-			} else {
-				referenced.putIfAbsent(type.getInternalName(), false);
-			}
+			referenced.add(type.getInternalName());
 		}
 	}
 }

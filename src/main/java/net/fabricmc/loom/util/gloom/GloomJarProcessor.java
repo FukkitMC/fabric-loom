@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 
 import com.google.common.hash.Hashing;
@@ -17,7 +17,6 @@ import io.github.fukkitmc.gloom.definitions.GloomDefinitions;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.zeroturnaround.zip.ByteSource;
 import org.zeroturnaround.zip.ZipEntrySource;
@@ -48,7 +47,7 @@ public class GloomJarProcessor implements JarProcessor {
 
 	@Override
 	public void process(File file, File compileOnlyJar) {
-		Map<String, Boolean> referenced = new HashMap<>();
+		Set<String> referenced = new HashSet<>();
 		ZipUtil.transformEntries(file, createEntries(referenced));
 		ZipUtil.addEntry(file, "gloom.sha256", hash);
 
@@ -63,37 +62,25 @@ public class GloomJarProcessor implements JarProcessor {
 		}
 	}
 
-	private ZipEntrySource[] createInjectionEntries(Map<String, Boolean> referenced) {
-		return referenced.entrySet().stream()
+	private ZipEntrySource[] createInjectionEntries(Set<String> referenced) {
+		return referenced.stream()
+				.filter(r -> !r.startsWith("java/"))
 				.map(entry -> {
-					boolean isInterface = entry.getValue();
-					int access = isInterface ? (Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE) : Opcodes.ACC_PUBLIC;
 					ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-
-					writer.visit(Opcodes.V1_8, access, entry.getKey(), null, isInterface ? null : "java/lang/Object", null);
-
-					if (!isInterface) {
-						MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-						constructor.visitVarInsn(Opcodes.ALOAD, 0);
-						constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-						constructor.visitInsn(Opcodes.RETURN);
-						constructor.visitEnd();
-					}
-
+					writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE, entry, null, null, null);
 					writer.visitEnd();
-
-					return new ByteSource(entry.getKey() + ".class", writer.toByteArray());
+					return new ByteSource(entry + ".class", writer.toByteArray());
 				})
 				.toArray(ZipEntrySource[]::new);
 	}
 
-	private ZipEntryTransformerEntry[] createEntries(Map<String, Boolean> referenced) {
+	private ZipEntryTransformerEntry[] createEntries(Set<String> referenced) {
 		return definitions.getDefinitions().stream()
 				.map(clazz -> new ZipEntryTransformerEntry(clazz.getName().replaceAll("\\.", "/") + ".class", getTransformer(clazz, referenced)))
 				.toArray(ZipEntryTransformerEntry[]::new);
 	}
 
-	private ZipEntryTransformer getTransformer(ClassDefinition clazz, Map<String, Boolean> referenced) {
+	private ZipEntryTransformer getTransformer(ClassDefinition clazz, Set<String> referenced) {
 		return new ByteArrayZipEntryTransformer() {
 			@Override
 			protected byte[] transform(ZipEntry zipEntry, byte[] input) {
@@ -107,9 +94,9 @@ public class GloomJarProcessor implements JarProcessor {
 				ClassReferenceAnalyzer before = new ClassReferenceAnalyzer(gloom);
 				reader.accept(before, 0);
 
-				Map<String, Boolean> r = after.referenced;
-				before.referenced.keySet().forEach(r::remove);
-				referenced.putAll(r);
+				Set<String> r = after.referenced;
+				r.removeAll(before.referenced);
+				referenced.addAll(r);
 
 				return writer.toByteArray();
 			}

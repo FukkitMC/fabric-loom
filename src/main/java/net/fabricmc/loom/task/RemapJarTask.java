@@ -64,6 +64,7 @@ import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.util.gloom.DebugMixinEmitter;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -131,11 +132,12 @@ public class RemapJarTask extends Jar {
 		AtomicReference<Remapper> asmMapper = new AtomicReference<>();
 
 		EmitterProvider<MixinEmitter> provider = new EmitterProvider<>(owner ->
-				new MixinEmitter(
+				new DebugMixinEmitter(
 						owner,
 						random + "/itf/" + owner + "Interface",
 						random + "/holder/" + owner + "Holder",
-						random + "/mixin/" + owner + "Mixin"));
+						random + "/mixin/" + owner + "Mixin",
+						project.getLogger()::debug));
 		Illuminate illuminate = new Illuminate(definitions, provider);
 
 		remapper = remapperBuilder

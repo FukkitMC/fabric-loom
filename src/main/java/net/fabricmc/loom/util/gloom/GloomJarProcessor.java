@@ -29,6 +29,8 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.processors.JarProcessor;
 
 public class GloomJarProcessor implements JarProcessor {
+	private static final String REVISION = "+rev.1";
+
 	private Project project;
 	private GloomDefinitions definitions;
 	private byte[] hash;
@@ -39,7 +41,7 @@ public class GloomJarProcessor implements JarProcessor {
 		definitions = project.getExtensions().getByType(LoomGradleExtension.class).definitions;
 
 		try {
-			hash = CharSource.wrap(DefinitionSerializer.toString(definitions)).asByteSource(StandardCharsets.UTF_8).hash(Hashing.sha256()).asBytes();
+			hash = CharSource.wrap(DefinitionSerializer.toString(definitions) + REVISION).asByteSource(StandardCharsets.UTF_8).hash(Hashing.sha256()).asBytes();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -67,7 +69,7 @@ public class GloomJarProcessor implements JarProcessor {
 				.filter(r -> !r.startsWith("java/"))
 				.map(entry -> {
 					ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-					writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE, entry, null, null, null);
+					writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE, entry, null, "java/lang/Object", null);
 					writer.visitEnd();
 					return new ByteSource(entry + ".class", writer.toByteArray());
 				})

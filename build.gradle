@@ -68,7 +68,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': version + " Build(3)"
+		attributes 'Implementation-Version': version + " Build(5)"
 	}
 }
 

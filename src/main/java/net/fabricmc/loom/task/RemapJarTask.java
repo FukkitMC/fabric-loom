@@ -137,7 +137,7 @@ public class RemapJarTask extends Jar {
 						random + "/itf/" + owner + "Interface",
 						random + "/holder/" + owner + "Holder",
 						random + "/mixin/" + owner + "Mixin",
-						project.getLogger()::debug));
+						project.getLogger()::info));
 		Illuminate illuminate = new Illuminate(definitions, provider);
 
 		remapper = remapperBuilder

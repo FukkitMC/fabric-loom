@@ -75,9 +75,9 @@ public class JarProcessorManager {
 		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
 	}
 
-	public void process(File file, File compileOnlyJar) {
+	public void process(File file, File annotationProcessorJar) {
 		for (JarProcessor jarProcessor : jarProcessors) {
-			jarProcessor.process(file, compileOnlyJar);
+			jarProcessor.process(file, annotationProcessorJar);
 		}
 	}
 

@@ -41,7 +41,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
 
 	private File projectMappedJar;
-	private File projectCompileOnlyJar;
+	private File projectAnnotationProcessorJar;
 
 	private final JarProcessorManager jarProcessorManager;
 
@@ -62,7 +62,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 				throw new RuntimeException("Failed to copy source jar", e);
 			}
 
-			jarProcessorManager.process(projectMappedJar, projectCompileOnlyJar);
+			jarProcessorManager.process(projectMappedJar, projectAnnotationProcessorJar);
 		}
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
@@ -70,9 +70,9 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
 
-		if (projectCompileOnlyJar.exists()) {
+		if (projectAnnotationProcessorJar.exists()) {
 			getProject().afterEvaluate($ -> $.afterEvaluate(project -> {
-				project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, getProject().files(projectCompileOnlyJar));
+				project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, getProject().files(projectAnnotationProcessorJar));
 			}));
 		}
 	}
@@ -96,7 +96,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
 		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
-		projectCompileOnlyJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + "-compileOnly.jar");
+		projectAnnotationProcessorJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + "-compileOnly.jar");
 	}
 
 	@Override

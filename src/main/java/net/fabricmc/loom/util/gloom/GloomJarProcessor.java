@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
@@ -29,7 +30,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.processors.JarProcessor;
 
 public class GloomJarProcessor implements JarProcessor {
-	private static final String REVISION = "+rev.1";
+	private static final String REVISION = "+rev.2";
 
 	private Project project;
 	private GloomDefinitions definitions;
@@ -48,7 +49,7 @@ public class GloomJarProcessor implements JarProcessor {
 	}
 
 	@Override
-	public void process(File file, File compileOnlyJar) {
+	public void process(File file, File annotationProcessorJar) {
 		Set<String> referenced = new HashSet<>();
 		ZipUtil.transformEntries(file, createEntries(referenced));
 		ZipUtil.addEntry(file, "gloom.sha256", hash);
@@ -56,17 +57,18 @@ public class GloomJarProcessor implements JarProcessor {
 		ZipEntrySource[] entries = createInjectionEntries(referenced);
 
 		if (entries.length > 0) {
-			if (!compileOnlyJar.exists()) {
-				ZipUtil.pack(entries, compileOnlyJar);
-			} else {
-				ZipUtil.addEntries(compileOnlyJar, entries);
+			if (annotationProcessorJar.exists()) {
+				annotationProcessorJar.delete();
 			}
+
+			ZipUtil.pack(entries, annotationProcessorJar);
 		}
 	}
 
 	private ZipEntrySource[] createInjectionEntries(Set<String> referenced) {
+		List<String> exclude = Arrays.asList(project.getProperties().get("loom_exclude_itf_gen").toString().split(";"));
 		return referenced.stream()
-				.filter(r -> !r.startsWith("java/"))
+				.filter(r -> exclude.stream().noneMatch(r::startsWith))
 				.map(entry -> {
 					ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 					writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE, entry, null, "java/lang/Object", null);

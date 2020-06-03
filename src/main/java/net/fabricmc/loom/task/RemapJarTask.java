@@ -204,10 +204,9 @@ public class RemapJarTask extends Jar {
 			config.addProperty("compatibilityLevel", "JAVA_8");
 			config.add("mixins", list);
 
-			mixins.stream()
-					.map(entry -> entry.substring(packageOffset).replace('/', '.'))
-					.peek(System.out::println)
-					.forEach(list::add);
+			for (String entry : mixins) {
+				list.add(entry.substring(packageOffset).replace('/', '.'));
+			}
 
 			ZipUtil.addEntry(output.toFile(), file, config.toString().getBytes());
 			ZipUtil.transformEntry(output.toFile(), "fabric.mod.json", new StringZipEntryTransformer() {

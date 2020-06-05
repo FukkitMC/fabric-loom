@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 
@@ -40,6 +39,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.github.fukkitmc.gloom.asm.Illuminate;
+import io.github.fukkitmc.gloom.asm.InheritanceProvider;
 import io.github.fukkitmc.gloom.definitions.GloomDefinitions;
 import io.github.fukkitmc.gloom.emitter.EmitterProvider;
 import io.github.fukkitmc.gloom.emitter.emitters.MixinEmitter;
@@ -67,6 +67,7 @@ import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.util.gloom.DebugMixinEmitter;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.TinyRemapperInheritanceProvider;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 public class RemapJarTask extends Jar {
@@ -129,7 +130,7 @@ public class RemapJarTask extends Jar {
 
 		String random = Integer.toString(ThreadLocalRandom.current().nextInt() & ~(1 << 31), 36);
 		GloomDefinitions definitions = extension.definitions;
-		AtomicReference<Remapper> asmMapper = new AtomicReference<>();
+		TinyRemapper[] remapperA = new TinyRemapper[1];
 
 		EmitterProvider<MixinEmitter> provider = new EmitterProvider<>(owner ->
 				new DebugMixinEmitter(
@@ -138,12 +139,32 @@ public class RemapJarTask extends Jar {
 						random + "/holder/" + owner + "Holder",
 						random + "/mixin/" + owner + "Mixin",
 						project.getLogger()::info));
-		Illuminate illuminate = new Illuminate(definitions, provider);
+		Illuminate illuminate = new Illuminate(definitions, provider, new InheritanceProvider() {
+			private InheritanceProvider delegate;
+
+			@Override
+			public String resolveFieldOwner(String owner, String name, String descriptor) {
+				if (delegate == null) {
+					delegate = new TinyRemapperInheritanceProvider(remapperA[0]);
+				}
+
+				return delegate.resolveFieldOwner(owner, name, descriptor);
+			}
+
+			@Override
+			public String resolveMethodOwner(String owner, String name, String descriptor) {
+				if (delegate == null) {
+					delegate = new TinyRemapperInheritanceProvider(remapperA[0]);
+				}
+
+				return delegate.resolveMethodOwner(owner, name, descriptor);
+			}
+		});
 
 		remapper = remapperBuilder
 				.extraPreVisitor(illuminate::createVisitor)
 				.build();
-		asmMapper.set(remapper.getRemapper());
+		remapperA[0] = remapper;
 
 		Set<String> mixins = new HashSet<>();
 
